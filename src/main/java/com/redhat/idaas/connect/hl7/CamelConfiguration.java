@@ -106,6 +106,7 @@ public class CamelConfiguration extends RouteBuilder {
               // iDAAS DataHub Processing
               .wireTap("direct:auditing")
               .wireTap("direct:logging")
+              .wireTap("direct:filesystem:" + type)
               // Send to Enterprise Topic by Message Type
               .convertBodyTo(String.class).to(getKafkaTopicUri("Ent_MCTN_" + type))
               // Send to Topic
@@ -179,6 +180,26 @@ public class CamelConfiguration extends RouteBuilder {
 
     from("direct:logging")
             .log(LoggingLevel.INFO, log, "HL7 Message Received: [${body}]")
+    ;
+
+    from("direct:filesystem:ADT")
+            .to("file:src/data-out/hl7v2/ADT?charset=iso-8859-1")
+    ;
+
+    from("direct:filesystem:ORM")
+            .to("file:src/data-out/hl7v2/ORM?charset=iso-8859-1")
+    ;
+
+    from("direct:filesystem:ORU")
+            .to("file:src/data-out/hl7v2/ORU?charset=iso-8859-1")
+    ;
+
+    from("direct:filesystem:SIU")
+            .to("file:src/data-out/hl7v2/SIU?charset=iso-8859-1")
+    ;
+
+    from("direct:filesystem:VXU")
+            .to("file:src/data-out/hl7v2/VXU?charset=iso-8859-1")
     ;
 
 
