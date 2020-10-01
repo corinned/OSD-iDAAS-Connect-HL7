@@ -45,19 +45,22 @@ public class CamelConfiguration extends RouteBuilder {
     //encoder.setConvertLFtoCR(true);
     return encoder;
   }
+
   @Bean
   private HL7MLLPNettyDecoderFactory hl7Decoder() {
     HL7MLLPNettyDecoderFactory decoder = new HL7MLLPNettyDecoderFactory();
     decoder.setCharset("iso-8859-1");
     return decoder;
   }
+
   @Bean
-  private KafkaEndpoint kafkaEndpoint(){
+  private KafkaEndpoint kafkaEndpoint() {
     KafkaEndpoint kafkaEndpoint = new KafkaEndpoint();
     return kafkaEndpoint;
   }
+
   @Bean
-  private KafkaComponent kafkaComponent(KafkaEndpoint kafkaEndpoint){
+  private KafkaComponent kafkaComponent(KafkaEndpoint kafkaEndpoint) {
     KafkaComponent kafka = new KafkaComponent();
     return kafka;
   }
@@ -88,19 +91,19 @@ public class CamelConfiguration extends RouteBuilder {
      *
      */
     from("direct:auditing")
-        .setHeader("messageprocesseddate").simple("${date:now:yyyy-MM-dd}")
-        .setHeader("messageprocessedtime").simple("${date:now:HH:mm:ss:SSS}")
-        .setHeader("processingtype").exchangeProperty("processingtype")
-        .setHeader("industrystd").exchangeProperty("industrystd")
-        .setHeader("component").exchangeProperty("componentname")
-        .setHeader("messagetrigger").exchangeProperty("messagetrigger")
-        .setHeader("processname").exchangeProperty("processname")
-        .setHeader("auditdetails").exchangeProperty("auditdetails")
-        .setHeader("camelID").exchangeProperty("camelID")
-        .setHeader("exchangeID").exchangeProperty("exchangeID")
-        .setHeader("internalMsgID").exchangeProperty("internalMsgID")
-        .setHeader("bodyData").exchangeProperty("bodyData")
-        .convertBodyTo(String.class).to(getKafkaTopicUri("opsmgmt_platformtransactions"))
+            .setHeader("messageprocesseddate").simple("${date:now:yyyy-MM-dd}")
+            .setHeader("messageprocessedtime").simple("${date:now:HH:mm:ss:SSS}")
+            .setHeader("processingtype").exchangeProperty("processingtype")
+            .setHeader("industrystd").exchangeProperty("industrystd")
+            .setHeader("component").exchangeProperty("componentname")
+            .setHeader("messagetrigger").exchangeProperty("messagetrigger")
+            .setHeader("processname").exchangeProperty("processname")
+            .setHeader("auditdetails").exchangeProperty("auditdetails")
+            .setHeader("camelID").exchangeProperty("camelID")
+            .setHeader("exchangeID").exchangeProperty("exchangeID")
+            .setHeader("internalMsgID").exchangeProperty("internalMsgID")
+            .setHeader("bodyData").exchangeProperty("bodyData")
+            .convertBodyTo(String.class).to(getKafkaTopicUri("opsmgmt_platformtransactions"))
     ;
 
     from("direct:logging")
@@ -108,13 +111,13 @@ public class CamelConfiguration extends RouteBuilder {
     ;
 
     /*
-	 *
-	 * HL7 v2x Server Implementations
-	 *  ------------------------------
-	 *  HL7 implementation based upon https://camel.apache.org/components/latest/dataformats/hl7-dataformat.html
-	 *  For leveraging HL7 based files:
-	 *  from("file:src/data-in/hl7v2/adt?delete=true?noop=true")
-	 *
+     *
+     * HL7 v2x Server Implementations
+     *  ------------------------------
+     *  HL7 implementation based upon https://camel.apache.org/components/latest/dataformats/hl7-dataformat.html
+     *  For leveraging HL7 based files:
+     *  from("file:src/data-in/hl7v2/adt?delete=true?noop=true")
+     *
      *   Simple language reference
      *   https://camel.apache.org/components/latest/languages/simple-language.html
      *
@@ -169,9 +172,62 @@ public class CamelConfiguration extends RouteBuilder {
             .wireTap("direct:auditing")
             // Enterprise Message By Sending App By Type
             .to("kafka:localhost:9092?topic=mms_adt&brokers=localhost:9092")
-            //.wireTap("direct:auditing")
+    //.wireTap("direct:auditing")
+    ;
+
+
+    //ORM (Orders)
+    from("file:src/data-in/hl7v2/ORM?delete=true?noop=true")
+            .routeId("hl7Orders")
+            .convertBodyTo(String.class)
+            // set Auditing Properties
+            .setProperty("processingtype").constant("data")
+            .setProperty("appname").constant("iDAAS-ConnectClinical-IndustryStd")
+            .setProperty("industrystd").constant("HL7")
+            .setProperty("messagetrigger").constant("ORM")
+            .setProperty("componentname").simple("${routeId}")
+            .setProperty("processname").constant("Input")
+            .setProperty("camelID").simple("${camelId}")
+            .setProperty("exchangeID").simple("${exchangeId}")
+            .setProperty("internalMsgID").simple("${id}")
+            .setProperty("bodyData").simple("${body}")
+            .setProperty("auditdetails").constant("ORM message received")
+            // iDAAS DataHub Processing
+            .wireTap("direct:auditing")
+            // Send to Topic
+            .convertBodyTo(String.class).to(getKafkaTopicUri("mctn_mms_orm"))
+            //Response to HL7 Message Sent Built by platform
+            .transform(HL7.ack())
+            // This would enable persistence of the ACK
+            .convertBodyTo(String.class)
+            .setProperty("bodyData").simple("${body}")
+            .setProperty("processingtype").constant("data")
+            .setProperty("appname").constant("iDAAS-ConnectClinical-IndustryStd")
+            .setProperty("industrystd").constant("HL7")
+            .setProperty("messagetrigger").constant("ORM")
+            .setProperty("componentname").simple("${routeId}")
+            .setProperty("camelID").simple("${camelId}")
+            .setProperty("exchangeID").simple("${exchangeId}")
+            .setProperty("internalMsgID").simple("${id}")
+            .setProperty("processname").constant("Input")
+            .setProperty("auditdetails").constant("ACK Processed")
+            // iDAAS DataHub Processing
+            .wireTap("direct:auditing")
+    ;
+
+    /*
+     *    HL7v2 ORM
+     */
+    from("kafka:localhost:9092?topic= mctn_mms_orm&brokers=localhost:9092")
+            .routeId("ORM-MiddleTier")
+            // Auditing
+            .setProperty("processingtype").constant("data")
+            .setProperty("appname").constant("iDAAS-ConnectClinical-IndustryStd")
+            .wireTap("direct:auditing")
+            // Enterprise Message By Sending App By Type
+            .to("kafka:localhost:9092?topic=mms_orm&brokers=localhost:9092")
+    //.wireTap("direct:auditing")
     ;
   }
-
 
 }

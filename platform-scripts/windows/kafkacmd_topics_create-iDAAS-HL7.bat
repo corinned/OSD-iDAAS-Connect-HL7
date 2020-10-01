@@ -14,6 +14,8 @@ call .\bin\windows\kafka-topics.bat --create --bootstrap-server localhost:9092 -
 :: Facility By Application by Message Trigger
 :: Facility: MCTN
 :: Application: MMS
+call .\bin\windows\kafka-topics.bat --create --bootstrap-server localhost:9092 --replication-factor 1^
+ --partitions 1 --topic mctn_mms_orm
 
 :: HL7
 :: Enterprise By Application by Message Trigger
