@@ -27,3 +27,8 @@ call .\bin\windows\kafka-topics.bat --create --bootstrap-server localhost:9092 -
 :: HL7
 :: Enterprise by Message Trigger
 :: Application: MMS
+call .\bin\windows\kafka-topics.bat --create --bootstrap-server localhost:9092 --replication-factor 1^
+ --partitions 1 --topic mctn_mms_siu
+
+ call .\bin\windows\kafka-topics.bat --create --bootstrap-server localhost:9092 --replication-factor 1^
+  --partitions 1 --topic mctn_mms_vxu
