@@ -175,6 +175,9 @@ public class CamelConfiguration extends RouteBuilder {
             .setHeader("exchangeID").exchangeProperty("exchangeID")
             .setHeader("internalMsgID").exchangeProperty("internalMsgID")
             .setHeader("bodyData").exchangeProperty("bodyData")
+            .setHeader("SendingApp").simple("HCMMS")
+            .setHeader("ReceivingApp").simple("MyMedical")
+            .setHeader("Facility").simple("MCTN")
             .convertBodyTo(String.class).to(getKafkaTopicUri("opsmgmt_platformtransactions"))
     ;
 
