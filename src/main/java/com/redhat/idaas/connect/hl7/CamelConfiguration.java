@@ -104,6 +104,7 @@ public class CamelConfiguration extends RouteBuilder {
             .setProperty("auditdetails").constant(type + " message received")
             // iDAAS DataHub Processing
             .wireTap("direct:auditing")
+            .wireTap("direct:logging")
             // Send to Topic
             .convertBodyTo(String.class).to(getKafkaTopicUri(topicName))
             //Response to HL7 Message Sent Built by platform
@@ -138,7 +139,6 @@ public class CamelConfiguration extends RouteBuilder {
             .wireTap("direct:auditing")
             // Enterprise Message By Sending App By Type
             .to(String.format("kafka:localhost:9092?topic=%s&brokers=localhost:9092", topicName2))
-    //.wireTap("direct:auditing")
     ;
   }
 
